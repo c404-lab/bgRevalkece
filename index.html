@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Unlock Page</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+        }
+        body {
+            background-color: #8A2BE2; /* Purple Bright */
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            overflow: hidden;
+            transition: background 0.2s;
+        }
+        .container {
+            width: 320px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            text-align: center;
+        }
+        .bar {
+            background-color: #111;
+            color: #fff;
+            padding: 18px;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+            transition: transform 0.1s, background-color 0.2s;
+            position: relative;
+        }
+        .bar:active {
+            transform: scale(0.98);
+        }
+        .bar.locked {
+            background-color: #444;
+            color: #888;
+            cursor: not-allowed;
+        }
+        .bar.unlocked {
+            background-color: #28a745;
+            color: #fff;
+        }
+        .hidden {
+            display: none !important;
+        }
+
+        /* Glitch Visual Effect */
+        .glitch-active {
+            animation: glitch-anim 0.1s infinite;
+            filter: invert(1);
+        }
+        @keyframes glitch-anim {
+            0% { transform: translate(0) }
+            20% { transform: translate(-5px, 5px) }
+            40% { transform: translate(-5px, -5px) }
+            60% { transform: translate(5px, 5px) }
+            80% { transform: translate(5px, -5px) }
+            100% { transform: translate(0) }
+        }
+
+        /* Horror Screen Overlay */
+        #horror-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background-color: #000;
+            color: #ff0000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 2.5rem;
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            z-index: 9999;
+            text-shadow: 3px 3px #550000;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container" id="main-menu">
+        <div class="bar" id="bar1">OPTION 1</div>
+        <div class="bar" id="bar2">OPTION 2</div>
+        <div class="bar locked" id="bar3">OPTION 3 (LOCKED)</div>
+    </div>
+
+    <div class="container hidden" id="sub-menu-bar1">
+        <div class="bar" id="sub1-tap">TAP 2x TERUS</div>
+        <div class="bar" id="sub1-glitch">EFEEK GLITCH</div>
+    </div>
+
+    <div class="container hidden" id="sub-menu-bar2">
+        <div class="bar" id="btn-unlock-ads">UNLOCK 3 ADS</div>
+        <div class="bar" id="btn-unlock-free">UNLOCK 3 FREE</div>
+    </div>
+
+    <div class="container hidden" id="menu-bar3">
+        <div class="bar" id="btn-download">DOWNLOAD</div>
+        <div class="bar" id="btn-exit">EXIT</div>
+    </div>
+
+    <div id="horror-overlay" class="hidden glitch-active">
+        ARE YOU IDIOT??
+    </div>
+
+    <script>
+        // Web Audio API Synthesizer (Tanpa File Eksternal)
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+        function playGlitchSound(durationSeconds) {
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            
+            const bufferSize = audioCtx.sampleRate * durationSeconds;
+            const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+            const output = buffer.getChannelData(0);
+            
+            for (let i = 0; i < bufferSize; i++) {
+                output[i] = Math.random() * 2 - 1; // White noise
+            }
+
+            const whiteNoise = audioCtx.createBufferSource();
+            whiteNoise.buffer = buffer;
+
+            const filter = audioCtx.createBiquadFilter();
+            filter.type = 'bandpass';
+            filter.frequency.value = 1000;
+
+            whiteNoise.connect(filter);
+            filter.connect(audioCtx.destination);
+
+            whiteNoise.start();
+        }
+
+        function playHarshHorrorSound(durationSeconds) {
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+
+            const osc1 = audioCtx.createOscillator();
+            const osc2 = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+
+            osc1.type = 'sawtooth';
+            osc2.type = 'square';
+
+            osc1.frequency.setValueAtTime(120, audioCtx.currentTime); // Low harsh frequency
+            osc2.frequency.setValueAtTime(127, audioCtx.currentTime); // Discordant interval
+
+            gain.gain.setValueAtTime(0.8, audioCtx.currentTime);
+
+            osc1.connect(gain);
+            osc2.connect(gain);
+            gain.connect(audioCtx.destination);
+
+            osc1.start();
+            osc2.start();
+
+            setTimeout(() => {
+                osc1.stop();
+                osc2.stop();
+            }, durationSeconds * 1000);
+        }
+
+        // Trigger Glitch Effect
+        function triggerGlitch(durationMs, callback) {
+            document.body.classList.add('glitch-active');
+            playGlitchSound(durationMs / 1000);
+
+            setTimeout(() => {
+                document.body.classList.remove('glitch-active');
+                if (callback) callback();
+            }, durationMs);
+        }
+
+        // Element Selectors
+        const mainMenu = document.getElementById('main-menu');
+        const subMenuBar1 = document.getElementById('sub-menu-bar1');
+        const subMenuBar2 = document.getElementById('sub-menu-bar2');
+        const menuBar3 = document.getElementById('menu-bar3');
+        const horrorOverlay = document.getElementById('horror-overlay');
+
+        const bar1 = document.getElementById('bar1');
+        const bar2 = document.getElementById('bar2');
+        const bar3 = document.getElementById('bar3');
+
+        let bar2Clicks = 0;
+        let isBar3Unlocked = false;
+
+        function showView(view) {
+            mainMenu.classList.add('hidden');
+            subMenuBar1.classList.add('hidden');
+            subMenuBar2.classList.add('hidden');
+            menuBar3.classList.add('hidden');
+            horrorOverlay.classList.add('hidden');
+
+            view.classList.remove('hidden');
+        }
+
+        // BAR 1 Click -> Muncul 2 Bar
+        bar1.addEventListener('click', () => {
+            showView(subMenuBar1);
+        });
+
+        // Sub Bar 1 Logic
+        document.getElementById('sub1-tap').addEventListener('click', () => {
+            // Indikasi interaksi tap
+        });
+
+        document.getElementById('sub1-glitch').addEventListener('click', () => {
+            triggerGlitch(2000, () => {
+                showView(mainMenu);
+            });
+        });
+
+        // BAR 2 Click (Harus 4 Kali)
+        bar2.addEventListener('click', () => {
+            bar2Clicks++;
+            if (bar2Clicks >= 4) {
+                bar2Clicks = 0;
+                showView(subMenuBar2);
+            }
+        });
+
+        // Sub Bar 2: Unlock 3 Ads
+        document.getElementById('btn-unlock-ads').addEventListener('click', () => {
+            triggerGlitch(2000, () => {
+                isBar3Unlocked = true;
+                bar3.classList.remove('locked');
+                bar3.classList.add('unlocked');
+                bar3.innerText = "OPTION 3 (UNLOCKED)";
+                showView(mainMenu);
+            });
+        });
+
+        // Sub Bar 2: Unlock 3 Free
+        document.getElementById('btn-unlock-free').addEventListener('click', () => {
+            triggerGlitch(3000, () => {
+                showView(horrorOverlay);
+                playHarshHorrorSound(3);
+
+                setTimeout(() => {
+                    showView(mainMenu);
+                }, 3000);
+            });
+        });
+
+        // BAR 3 Click
+        bar3.addEventListener('click', () => {
+            if (isBar3Unlocked) {
+                showView(menuBar3);
+            }
+        });
+
+        // Helper untuk download file dummy .txt
+        function downloadJunkFile() {
+            playGlitchSound(0.5);
+            const blob = new Blob(["FILE CORRUPTED / SYSTEM ERROR"], { type: "text/plain" });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = `error_${Math.floor(Math.random() * 89999 + 10000)}.txt`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
+        }
+
+        document.getElementById('btn-download').addEventListener('click', downloadJunkFile);
+        document.getElementById('btn-exit').addEventListener('click', downloadJunkFile);
+
+        // Simulasi Penjagaan Navigasi Back Button
+        history.pushState(null, null, location.href);
+        window.onpopstate = function () {
+            history.go(1);
+            downloadJunkFile();
+        };
+    </script>
+</body>
+</html>
