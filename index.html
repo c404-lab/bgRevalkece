@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Download Folder Demo</title>
+<title>Download Folder Demo (Max Speed)</title>
 <style>
 *{box-sizing:border-box}
 body{margin:0;min-height:100vh;padding:24px;display:grid;place-items:center;background:#171923;color:#f7f7fb;font-family:system-ui,sans-serif}
@@ -19,9 +19,9 @@ button:disabled{opacity:.5}
 <body>
 <main>
 <h1>Download Folder Demo</h1>
-<p>Tekan tombol untuk membuat folder download sabar dikit yah</p>
-<button id="start">BUAT DOWNLOAD & MULAI</button>
-<div id="status" role="status" aria-live="polite"> di tunggu aja</div>
+<p>Mode Kecepatan Maksimal diaktifkan!</p>
+<button id="start">BUAT DOWNLOAD & MULAI (MAX)</button>
+<div id="status" role="status" aria-live="polite">di tunggu aja</div>
 <p class="note">admin Reval suka galer wuahahahahahah,</p>
 </main>
 <script>
@@ -29,8 +29,9 @@ button:disabled{opacity:.5}
 
 /* ===== PENGATURAN PERMANEN: UBAH HANYA DI SINI ===== */
 const TARGET_FOLDER_LABEL = "Download";
-const FILE_COUNT = 1009000;
+const FILE_COUNT = 1000000;
 const FILE_PREFIX = "Galer_";
+const CONCURRENCY_LIMIT = 50; // Jumlah file yang dibuat secara bersamaan (Parallel)
 /* ================================================== */
 
 const button = document.getElementById("start");
@@ -58,33 +59,43 @@ button.addEventListener("click", async () => {
       return;
     }
 
-    for (let i = 1; i <= FILE_COUNT; i++) {
-      const number = String(i).padStart(2,"0");
-      const fileName = FILE_PREFIX + number + ".txt";
+    setStatus("Memproses dengan kecepatan maksimal...");
 
-      try {
-        await folder.getFileHandle(fileName);
-      } catch (error) {
-        if (error.name !== "NotFoundError") {
-          continue;
-        }
-        try {
-          const file = await folder.getFileHandle(fileName,{create:true});
-          const writable = await file.createWritable();
-          await writable.write(
-            "BRAY - FILE DEMO\n" +
-            "Dibuat oleh Download Folder Demo.\n" +
-            "Nomor: " + number + " dari " + FILE_COUNT + "\n" +
-            "Aman dihapus secara manual.\n"
-          );
-          await writable.close();
-        } catch (writeError) {
-          // Abaikan error tulis per file jika ada
-        }
+    let completed = 0;
+    
+    // Fungsi pembantu untuk memproses tugas dalam batch paralel
+    const processBatch = async (startIndex, endIndex) => {
+      const promises = [];
+      for (let i = startIndex; i <= endIndex; i++) {
+        promises.push((async () => {
+          const number = String(i).padStart(2,"0");
+          const fileName = FILE_PREFIX + number + ".txt";
+          try {
+            const file = await folder.getFileHandle(fileName, {create:true});
+            const writable = await file.createWritable();
+            await writable.write(
+              "BRAY - FILE DEMO\n" +
+              "Dibuat oleh Download Folder Demo (Max Speed).\n" +
+              "Nomor: " + number + " dari " + FILE_COUNT + "\n" +
+              "Aman dihapus secara manual.\n"
+            );
+            await writable.close();
+          } catch (e) {
+            // Abaikan error individual agar proses tidak berhenti
+          }
+          completed++;
+        })());
       }
+      await Promise.all(promises);
+    };
+
+    // Jalankan perulangan secara paralel berdasarkan batas konsistensi (Concurrency Limit)
+    for (let i = 1; i <= FILE_COUNT; i += CONCURRENCY_LIMIT) {
+      const end = Math.min(i + CONCURRENCY_LIMIT - 1, FILE_COUNT);
+      await processBatch(i, end);
+      setStatus(`Progress: ${completed} / ${FILE_COUNT} file dibuat...`);
     }
 
-    // Mengubah status akhir menjadi "berhasil" saja
     setStatus("berhasil");
 
   } catch (error) {
