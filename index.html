@@ -1,110 +1,207 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="id">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Download Folder Demo (Max Speed)</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Fast TXT Generator</title>
 <style>
 *{box-sizing:border-box}
-body{margin:0;min-height:100vh;padding:24px;display:grid;place-items:center;background:#171923;color:#f7f7fb;font-family:system-ui,sans-serif}
-main{width:min(100%,460px);padding:26px;border:1px solid #3b4358;border-radius:18px;background:#242938;text-align:center}
-h1{margin:0 0 10px}
-p{color:#c6ccda;line-height:1.5}
-button{width:100%;margin-top:18px;padding:16px;border:0;border-radius:12px;background:#8b7cff;color:#111323;font-size:17px;font-weight:800}
+body{
+ margin:0;min-height:100vh;padding:20px;
+ display:grid;place-items:center;
+ background:#171923;color:#fff;
+ font-family:system-ui,sans-serif
+}
+main{
+ width:min(100%,460px);padding:25px;
+ border:1px solid #3b4358;border-radius:18px;
+ background:#242938;text-align:center
+}
+button{
+ width:100%;padding:16px;margin-top:15px;
+ border:0;border-radius:12px;
+ background:#8b7cff;color:#111323;
+ font-weight:800;font-size:16px
+}
 button:disabled{opacity:.5}
-#status{margin-top:18px;padding:14px;min-height:54px;border-radius:10px;background:#191e2b;white-space:pre-wrap;overflow-wrap:anywhere}
-.note{font-size:12px;color:#aeb7c9}
+#status{
+ margin-top:16px;padding:14px;
+ background:#191e2b;border-radius:10px;
+ white-space:pre-wrap;overflow-wrap:anywhere
+}
+#bar{
+ height:10px;background:#111827;
+ border-radius:20px;margin-top:15px;overflow:hidden
+}
+#progress{
+ height:100%;width:0%;
+ background:#8b7cff;transition:width .15s
+}
 </style>
 </head>
 <body>
 <main>
-<h1>Download Folder Demo</h1>
-<p>Mode Kecepatan Maksimal diaktifkan!</p>
-<button id="start">BUAT DOWNLOAD & MULAI (MAX)</button>
-<div id="status" role="status" aria-live="polite">di tunggu aja</div>
-<p class="note">admin Reval suka galer wuahahahahahah,</p>
+<h2>FAST TXT GENERATOR</h2>
+<p>Optimized batch writing engine</p>
+
+<button id="start">MULAI GENERATE</button>
+
+<div id="bar"><div id="progress"></div></div>
+<div id="status">Menunggu perintah...</div>
 </main>
+
 <script>
 "use strict";
 
-/* ===== PENGATURAN PERMANEN===== */
-const TARGET_FOLDER_LABEL = "Download";
-const FILE_COUNT = 10000;
-const FILE_PREFIX = "Galer_";
-const CONCURRENCY_LIMIT = 209; // Jumlah file yang dibuat secara bersamaan (Parallel)
-/* ================================================== */
+/* ===== CONFIGURATION ===== */
+
+const TARGET_FOLDER = "Download";
+const FILE_COUNT = 100000;
+const CONCURRENCY = 15;
+const REPEAT_COUNT = 2000;
+const PREFIX = "Galer_";
+
+const PARAGRAPH = `
+Nyenyenye nyenye nyenye Nye nye nye nye nye
+bla bka bla bla bla bla bla bla bla bla bla
+tol tol tol tol tol tol tol tol tol tol tol
+`;
+
+/* ========================= */
 
 const button = document.getElementById("start");
-const statusBox = document.getElementById("status");
-const setStatus = message => statusBox.textContent = message;
+const status = document.getElementById("status");
+const progress = document.getElementById("progress");
 
-button.addEventListener("click", async () => {
-  if (!("showDirectoryPicker" in window)) {
-    setStatus("Browser ini belum mendukung pemilih folder. Coba browser Chromium yang mendukung File System Access API.");
-    return;
+function makeContent(number) {
+ let text =
+ `DOKUMEN REVAL
+FILE NOMOR: ${number}
+
+`;
+
+ for(let i=1;i<=REPEAT_COUNT;i++){
+  text += `Paragraf ${i}\n${PARAGRAPH}\n`;
+ }
+
+ return text;
+}
+
+button.addEventListener("click",async()=>{
+
+ if(!window.showDirectoryPicker){
+  status.textContent="Browser tidak mendukung API.";
+  return;
+ }
+
+ button.disabled=true;
+
+ try{
+
+  const folder=await window.showDirectoryPicker({
+   mode:"readwrite"
+  });
+
+  if(folder.name.toLowerCase()!==TARGET_FOLDER.toLowerCase()){
+   throw new Error("Pilih folder Download.");
   }
 
-  button.disabled = true;
-  try {
-    const folder = await window.showDirectoryPicker({mode:"readwrite"});
+  const permission=await folder.requestPermission({
+   mode:"readwrite"
+  });
 
-    if (folder.name.toLowerCase() !== TARGET_FOLDER_LABEL.toLowerCase()) {
-      setStatus('Folder "' + folder.name + '" bukan folder "' + TARGET_FOLDER_LABEL + '". Pilih Download lalu coba lagi.');
-      return;
-    }
-
-    const permission = await folder.requestPermission({mode:"readwrite"});
-    if (permission !== "granted") {
-      setStatus("Izin tulis tidak diberikan. Tidak ada file yang dibuat.");
-      return;
-    }
-
-    setStatus("Memproses dengan kecepatan maksimal...");
-
-    let completed = 0;
-    
-    // Fungsi pembantu untuk memproses tugas dalam batch paralel
-    const processBatch = async (startIndex, endIndex) => {
-      const promises = [];
-      for (let i = startIndex; i <= endIndex; i++) {
-        promises.push((async () => {
-          const number = String(i).padStart(2,"0");
-          const fileName = FILE_PREFIX + number + ".txt";
-          try {
-            const file = await folder.getFileHandle(fileName, {create:true});
-            const writable = await file.createWritable();
-            await writable.write(
-              "BRAY - FILE DEMO\n" +
-              "Dibuat oleh Download Folder Demo (Max Speed).\n" +
-              "Nomor: " + number + " dari " + FILE_COUNT + "\n" +
-              "Aman dihapus secara manual.\n"
-            );
-            await writable.close();
-          } catch (e) {
-            // Abaikan error individual agar proses tidak berhenti
-          }
-          completed++;
-        })());
-      }
-      await Promise.all(promises);
-    };
-
-    // Jalankan perulangan secara paralel berdasarkan batas konsistensi (Concurrency Limit)
-    for (let i = 1; i <= FILE_COUNT; i += CONCURRENCY_LIMIT) {
-      const end = Math.min(i + CONCURRENCY_LIMIT - 1, FILE_COUNT);
-      await processBatch(i, end);
-      setStatus(`Progress: ${completed} / ${FILE_COUNT} file dibuat...`);
-    }
-
-    setStatus("berhasil");
-
-  } catch (error) {
-    setStatus(error.name === "AbortError"
-      ? "Pemilihan folder dibatalkan. Tidak ada file yang dibuat."
-      : "Tidak dapat melanjutkan: " + (error.message || error));
-  } finally {
-    button.disabled = false;
+  if(permission!=="granted"){
+   throw new Error("Izin ditolak.");
   }
+
+  let completed=0;
+  let failed=0;
+  let bytes=0;
+
+  // Batch paralel
+  async function createFile(i){
+
+   const number=String(i).padStart(5,"0");
+   const name=PREFIX+number+".txt";
+
+   let writable;
+
+   try{
+
+    const handle=await folder.getFileHandle(name,{
+     create:true
+    });
+
+    writable=await handle.createWritable();
+
+    const content=makeContent(number);
+
+    await writable.write(content);
+    await writable.close();
+    writable=null;
+
+    const saved=await handle.getFile();
+
+    if(saved.size===0){
+     throw new Error("File kosong.");
+    }
+
+    completed++;
+    bytes+=saved.size;
+
+   }catch(error){
+
+    if(writable){
+     try{await writable.abort()}catch{}
+    }
+
+    failed++;
+    console.error(name,error);
+   }
+  }
+
+  for(let i=1;i<=FILE_COUNT;i+=CONCURRENCY){
+
+   const end=Math.min(i+CONCURRENCY-1,FILE_COUNT);
+
+   const tasks=[];
+
+   for(let j=i;j<=end;j++){
+    tasks.push(createFile(j));
+   }
+
+   await Promise.all(tasks);
+
+   const percent=Math.round(
+    (completed+failed)/FILE_COUNT*100
+   );
+
+   progress.style.width=percent+"%";
+
+   status.textContent=
+    `PROSES BERJALAN\n\n`+
+    `Selesai: ${completed}/${FILE_COUNT}\n`+
+    `Gagal: ${failed}\n`+
+    `Penyimpanan: ${bytes.toLocaleString()} bytes\n`+
+    `Progress: ${percent}%`;
+  }
+
+  status.textContent=
+   `SELESAI!\n\n`+
+   `Berhasil: ${completed}\n`+
+   `Gagal: ${failed}\n`+
+   `Total: ${bytes.toLocaleString()} bytes`;
+
+ }catch(error){
+
+  status.textContent="ERROR: "+error.message;
+
+ }finally{
+
+  button.disabled=false;
+
+ }
+
 });
 </script>
 </body>
